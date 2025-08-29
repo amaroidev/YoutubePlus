@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Product Id="*" Name="YoutubePlus" Language="1033" Version="1.0.0.0" Manufacturer="YoutubePlus" UpgradeCode="f8d997e8-8c7c-4a46-9015-188187c5c6f3">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine"  InstallScope="perMachine" InstallPrivileges="elevated" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <WixVariable Id="WixUIBannerBmp" Value="Resources\bannrbmp.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="Resources\dlgbmp.bmp" />
+
+    <Icon Id="icon.ico" SourceFile="$(var.YoutubePlus.ProjectDir)YoutubePlus.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+
+    <!-- Check more registry locations for WebView2 Runtime -->
+    <Property Id="WV2RTINSTALLED">
+      <RegistrySearch Id="WV2RT_RegKey_64" Root="HKLM" Key="SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" Name="pv" Type="raw" Win64="no" />
+      <RegistrySearch Id="WV2RT_RegKey_32" Root="HKLM" Key="SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" Name="pv" Type="raw" Win64="no" />
+      <RegistrySearch Id="WV2RT_HKCU_64" Root="HKCU" Key="Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" Name="pv" Type="raw" Win64="yes" />
+      <RegistrySearch Id="WV2RT_HKCU_32" Root="HKCU" Key="Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" Name="pv" Type="raw" Win64="no" />
+    </Property>
+
+    <!-- Set a property to indicate if we need to install WebView2 -->
+    <Property Id="INSTALLWEBVIEW2" Value="0">
+      <RegistrySearch Id="NeedWV2" Root="HKLM" Key="SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" Type="raw" Win64="no">
+        <FileSearch Name="msedgewebview2.exe" />
+      </RegistrySearch>
+    </Property>
+
+    <Condition Message="The WebView2 Runtime is required to run YoutubePlus. It will be installed automatically during setup.">
+      <![CDATA[Installed OR WV2RTINSTALLED]]>
+    </Condition>
+
+    <UI>
+      <UIRef Id="WixUI_Minimal" />
+      <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="YoutubePlus has been installed successfully. You can find it in the Start Menu. If you encounter any issues loading YouTube, please ensure WebView2 Runtime is installed." />
+      
+      <!-- Add a dialog to the UI sequence that informs the user we're installing WebView2 -->
+      <Dialog Id="WebView2InstallDlg" Width="370" Height="270" Title="Installing WebView2 Runtime">
+        <Control Id="Title" Type="Text" X="15" Y="15" Width="340" Height="40" Transparent="yes" NoPrefix="yes">
+          <Text>Installing WebView2 Runtime</Text>
+        </Control>
+        <Control Id="Description" Type="Text" X="15" Y="65" Width="340" Height="60">
+          <Text>The WebView2 Runtime is required for YoutubePlus to function properly. It is being installed now. This may take a few minutes. Please wait...</Text>
+        </Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Wait" Type="Text" X="15" Y="200" Width="340" Height="30">
+          <Text>Please wait for the installation to complete.</Text>
+        </Control>
+      </Dialog>
+    </UI>
+
+    
+    <!-- WebView2 Installation Check -->
+    <Property Id="WEBVIEW2INSTALLED">
+        <RegistrySearch Id="WebView2InstalledSearch" Root="HKLM" 
+                        Key="SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" 
+                        Name="pv" Type="raw" />
+    </Property>
+
+    <!-- Custom Action to install WebView2 if not present -->
+    <CustomAction Id="InstallWebView2" 
+                  FileKey="MicrosoftEdgeWebview2Setup.exe" 
+                  ExeCommand="/silent /install" 
+                  Return="check" />
+
+    <!-- Execute WebView2 installation if needed -->
+    <InstallExecuteSequence>
+        <Custom Action="InstallWebView2" After="InstallFiles">NOT WEBVIEW2INSTALLED</Custom>
+    </InstallExecuteSequence>
+    <Feature Id="ProductFeature" Title="YoutubePlus.Setup" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ProgramMenuComponents" />
+    
+    <ComponentGroupRef Id="WebView2Components" /></Feature>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="YoutubePlus" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="YoutubePlus"/>
+      </Directory>
+    </Directory>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="YoutubePlus_exe" Guid="*">
+        <File Id="YoutubePlus_exe" Source="$(var.YoutubePlus.TargetPath)" KeyPath="yes" />
+      </Component>
+      <Component Id="yt_dlp_exe" Guid="*">
+        <File Id="yt_dlp_exe" Source="$(var.YoutubePlus.ProjectDir)yt-dlp.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="WV2Installer" Guid="*">
+        <File Id="WV2InstallerExe" Source="$(var.YoutubePlus.TargetDir)MicrosoftEdgeWebview2Setup.exe" KeyPath="yes"/>
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="ProgramMenuComponents" Directory="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="*">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="YoutubePlus"
+                  Description="A custom YouTube client"
+                  Target="[#YoutubePlus_exe]"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="icon.ico"/>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\YoutubePlus\YoutubePlus" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </ComponentGroup>
+
+    <!-- Custom actions for WebView2 installation -->
+    <CustomAction Id="InstallWV2Runtime_Cmd" Property="InstallWV2Runtime" Value="&quot;[#WV2InstallerExe]&quot; /silent /install" Execute="immediate" />
+    <CustomAction Id="InstallWV2Runtime" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" Impersonate="no" />
+
+    <InstallExecuteSequence>
+      <Custom Action="InstallWV2Runtime_Cmd" Before="InstallWV2Runtime">NOT WV2RTINSTALLED</Custom>
+      <Custom Action="InstallWV2Runtime" After="InstallFiles">NOT WV2RTINSTALLED</Custom>
+    </InstallExecuteSequence>
+
+  </Product>
+</Wix>
+

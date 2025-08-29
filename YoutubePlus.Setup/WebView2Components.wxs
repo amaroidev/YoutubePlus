@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WebView2Components.wxs -->
+<!-- Add this file to your WiX project and include the ComponentGroup in your main Package.wxs file -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <ComponentGroup Id="WebView2Components" Directory="INSTALLFOLDER">
+            <!-- WebView2Loader.dll Component -->
+            <Component Id="WebView2Loader.dll" Guid="*">
+                <File Id="WebView2Loader.dll" Source="$(var.ProjectDir)\..\WebView2Loader.dll" KeyPath="yes" />
+            </Component>
+            
+            <!-- MicrosoftEdgeWebview2Setup.exe Component -->
+            <Component Id="MicrosoftEdgeWebview2Setup.exe" Guid="*">
+                <File Id="MicrosoftEdgeWebview2Setup.exe" Source="$(var.ProjectDir)\..\MicrosoftEdgeWebview2Setup.exe" KeyPath="yes" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+</Wix>
